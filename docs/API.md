@@ -1,5 +1,16 @@
 ## gulp API docs
 
+* [gulp.src](#gulpsrcglobs-options) - Emit files matching one or more globs
+* [gulp.dest](#gulpdestpath-options) - Write files to directories
+* [gulp.symlink](#gulpsymlinkfolder-options) - Write files to symlinks
+* [gulp.task](#gulptaskname-fn) - Define tasks
+* [gulp.lastRun](#gulplastruntaskname-timeresolution) - Get timestamp of last successful run
+* [gulp.parallel](#gulpparalleltasks) - Run tasks in parallel
+* [gulp.series](#gulpseriestasks) - Run tasks in series
+* [gulp.watch](#gulpwatchglob-opts-fn) - Do something when a file changes
+* [gulp.tree](#gulptreeoptions) - Get the tree of tasks
+* [gulp.registry](#gulpregistryregistry) - Get or set the task registry
+
 ### gulp.src(globs[, options])
 
 Emits files matching provided glob or array of globs.
@@ -20,7 +31,8 @@ Type: `String` or `Array`
 Glob or array of globs to read.
 
 Note that globs are evaluated in order, which means this is possible:
-```
+
+```js
 // exclude every JS file that starts with a b except bad.js
 gulp.src(['*.js', '!b*.js', 'bad.js'])
 ```
@@ -88,6 +100,7 @@ emits globbed files.
 
 ##### options.allowEmpty
 Type: `Boolean`
+
 Default: `false`
 
 When true, will allow singular globs to fail to match. Otherwise, globs which are only supposed to match one file (such as `./foo/bar.js`) will cause an error to be thrown if they don't match.
@@ -101,6 +114,7 @@ gulp.src('app/scripts.js')
 gulp.src('app/scripts.js', { allowEmpty: true })
   .pipe(...);
 ```
+
 
 ### gulp.dest(path[, options])
 
@@ -272,6 +286,7 @@ is not provided.
 ##### fn.description
 
 gulp-cli prints this description alongside the task name when listing tasks:
+
 ```js
 var gulp = require('gulp');
 
@@ -282,7 +297,8 @@ test.description = 'I do nothing';
 
 gulp.task(test);
 ```
-```shell
+
+```sh
 $> gulp --tasks
 [12:00:02] Tasks for ~/Documents/some-project/gulpfile.js
 [12:00:02] └── test  I do nothing
@@ -360,6 +376,7 @@ gulp.task('sometask', function() {
 });
 ```
 
+
 ### gulp.lastRun(taskName, [timeResolution])
 
 Returns the timestamp of the last time the task ran successfully. The time
@@ -380,18 +397,21 @@ Default: `1000` on node v0.10, `0` on node v0.12 (and iojs v1.5).
 
 Set the time resolution of the returned timestamps. Assuming
 the task named "someTask" ran at `1426000004321`:
+
 - `gulp.lastRun('someTask', 1000)` would return `1426000004000`.
 - `gulp.lastRun('someTask', 100)` would return `1426000004300`.
 
 `timeResolution` allows you to compare a run time to a file [mtime stat][fs stats]
 attribute. This attribute time resolution may vary depending of the node version
 and the file system used:
+
 - on node v0.10, a file [mtime stat][fs stats] time resolution of any files will be 1s at best;
 - on node v0.12 and iojs v1.5, 1ms at best;
 - for files on FAT32, the mtime time resolution is 2s;
 - on HFS+ and Ext3, 1s;
 - on NTFS, 1s on node v0.10, 100ms on node 0.12;
 - on Ext4, 1s on node v0.10, 1ms on node 0.12.
+
 
 ### gulp.parallel(...tasks)
 
@@ -461,7 +481,7 @@ Type: `Array`, `String` or `Function`
 A task name, a function or an array of either.
 
 
-### gulp.watch(glob[, opts], fn)
+### gulp.watch(glob[, opts][, fn])
 
 Watch files and do something when a file changes.
 File watching is provided by the [`chokidar`][chokidar] module.
@@ -472,7 +492,7 @@ Please report any file watching problems directly to its
 gulp.watch('js/**/*.js', gulp.parallel('uglify', 'reload'));
 ```
 
-In the example, `gulp.watch` runs the function returned by gulp.parallel each
+In the example, `gulp.watch` runs the function returned by `gulp.parallel` each
 time a file with the `js` extension in `js/` is updated.
 
 #### glob
@@ -486,7 +506,8 @@ Type: `Object`
 Options that are passed to [`chokidar`][chokidar].
 
 Commonly used options:
-* `ignored` ([anymatch](https://github.com/es128/anymatch)-compatible definition)
+
+* `ignored` ([anymatch](https://github.com/es128/anymatch)-compatible definition).
 Defines files/paths to be excluded from being watched.
 * `usePolling` (boolean, default: `false`). When `true` uses a watch method backed
 by stat polling. Usually necessary when watching files on a network mount or on a
@@ -494,22 +515,24 @@ VMs file system.
 * `cwd` (path string). The base directory from which watch paths are to be
 derived. Paths emitted with events will be relative to this.
 * `alwaysStat` (boolean, default: `false`). If relying upon the
-[`fs.Stats`](http://nodejs.org/api/fs.html#fs_class_fs_stats) object
+[`fs.Stats`][fs stats] object
 that may get passed as a second argument with `add`, `addDir`, and `change` events
 when available, set this to `true` to ensure it is provided with every event. May
 have a slight performance penalty.
 
-Read about the full set of options in [`chokidar`'s README][chokidar]
+Read about the full set of options in [`chokidar`'s README][chokidar].
 
 #### fn
 Type: `Function`
 
-An [async](#async-support) function to run when a file changes.
+An [async](#async-support) function to run when a file changes. Does not provide
+access to the `path` parameter.
 
 `gulp.watch` returns a wrapped [chokidar] FSWatcher object. If provided,
 the callback will be triggered upon any `add`, `change`, or `unlink` event.
 Listeners can also be set directly for any of [chokidar]'s events, such as
-`addDir`, `unlinkDir`, and `error`.
+`addDir`, `unlinkDir`, and `error`. You must set listeners directly to get
+access to chokidar's callback parameters, such as `path`.
 
 ```js
 var watcher = gulp.watch('js/**/*.js', gulp.parallel('uglify', 'reload'));
@@ -523,15 +546,15 @@ watcher.on('unlink', function(path) {
 ```
 
 ##### path
-Type: String
+Type: `String`
 
-The relative path of the document.
+Path to the file. If `opts.cwd` is set, `path` is relative to it.
 
 ##### stats
-Type: Object
+Type: `Object`
 
-[File stats](http://nodejs.org/api/fs.html#fs_class_fs_stats) object when available.
-Setting the `alwaysStat` option to true will ensure that a file stat object will be
+[File stats][fs stats] object when available.
+Setting the `alwaysStat` option to `true` will ensure that a file stat object will be
 provided.
 
 #### watcher methods
@@ -549,12 +572,13 @@ Watch additional glob (or array of globs) with an already-running watcher instan
 Stop watching a glob (or array of globs) while leaving the watcher running and
 emitting events for the remaining paths it is watching.
 
+
 ### gulp.tree(options)
 
 Returns the tree of tasks. Inherited from [undertaker]. See the [undertaker docs for this function](https://github.com/phated/undertaker#treeoptions--object).
 
 #### options
-Type: Object
+Type: `Object`
 
 Options to pass to [undertaker].
 
@@ -563,7 +587,7 @@ Type: `Boolean`
 
 Default: `false`
 
-If set to true whole tree should be returned.
+If set to `true` whole tree should be returned.
 
 #### Example gulpfile
 
@@ -696,12 +720,13 @@ gulp.tree({ deep: true })
 */
 ```
 
+
 ### gulp.registry([registry])
 
 Get or set the underlying task registry. Inherited from [undertaker]; see the undertaker documention on [registries](https://github.com/phated/undertaker#registryregistryinstance). Using this, you can change registries that enhance gulp in different ways. Utilizing a custom registry has at least three use cases:
 
 - [Sharing tasks](https://github.com/phated/undertaker#sharing-tasks)
-- [Sharing functionality](https://github.com/phated/undertaker#sharing-functionalities). (e.g. you could override the task prototype to add some additional logging, bind task metadata or include some config settings.)
+- [Sharing functionality](https://github.com/phated/undertaker#sharing-functionalities) (e.g. you could override the task prototype to add some additional logging, bind task metadata or include some config settings.)
 - Handling other behavior that hooks into the registry lifecycle (see [gulp-hub](https://github.com/frankwallis/gulp-hub) for an example)
 
 To build your own custom registry see the [undertaker documentation on custom registries](https://github.com/phated/undertaker#custom-registries).

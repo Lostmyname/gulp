@@ -7,6 +7,15 @@ var chokidar = require('chokidar');
 
 function Gulp() {
   Undertaker.call(this);
+
+  // Bind the functions for destructuring
+  this.watch = this.watch.bind(this);
+  this.task = this.task.bind(this);
+  this.series = this.series.bind(this);
+  this.parallel = this.parallel.bind(this);
+  this.registry = this.registry.bind(this);
+  this.tree = this.tree.bind(this);
+  this.lastRun = this.lastRun.bind(this);
 }
 util.inherits(Gulp, Undertaker);
 
@@ -25,6 +34,8 @@ Gulp.prototype.watch = function(glob, opt, task) {
     task = opt;
     opt = {};
   }
+
+  opt = opt || {};
 
   var fn;
   if (typeof task === 'function') {
